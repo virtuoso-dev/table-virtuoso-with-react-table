@@ -51,9 +51,9 @@ function App() {
     []
   )
 
-  const [data, setData] = useState(() => makeData(50000))
+  const [data, setData] = useState(() => makeData(500))
   return (
-    <div className="bg-gray-100 container max-w-lg">
+    <div className="bg-gray-100 container">
       <DataTable columns={columns} data={data} />
     </div>
   );

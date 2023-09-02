@@ -15,6 +15,7 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   useReactTable,
+  ColumnResizeMode,
 } from '@tanstack/react-table'
 
 import {
@@ -33,6 +34,7 @@ import { Input } from './ui/input'
 import { fallbackRender } from './fallback-render'
 import { cn } from '@/lib/utils'
 import { DataTableFilter } from './data-table-filter'
+import React from 'react'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -49,6 +51,7 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []
   )
+
   const [isPending, startTransition] = useTransition()
   const transitionSetGlobalFilter = (value: string) => {
     startTransition(() => {
@@ -67,6 +70,7 @@ export function DataTable<TData, TValue>({
   }
   const memoizedColumns = useMemo(() => columns, [columns])
   const memoizedData = useMemo(() => data, [data])
+
   const table = useReactTable({
     data: memoizedData,
     columns: memoizedColumns,
@@ -102,16 +106,8 @@ export function DataTable<TData, TValue>({
     // debugHeaders: true,
     // debugColumns: true,
   })
-  const TableItem = useCallback(
-    (index: number) => {
-      const row = table.getRowModel().rows[index]
-      return <DataTableRow row={row} />
-    },
-    [table]
-  )
-  const renderTotalCount = useMemo(() => table.getRowModel().rows.length, [table])
-  const fixedHeaderContent = useCallback(() => {
-    console.log('render fixedHeaderContent')
+
+  const fixedHeaderContent = () => {
     return table.getHeaderGroups().map((headerGroup) => (
       <TableRow key={headerGroup.id}>
         {headerGroup.headers.map((header) => {
@@ -157,9 +153,16 @@ export function DataTable<TData, TValue>({
                     {...{
                       onMouseDown: header.getResizeHandler(),
                       onTouchStart: header.getResizeHandler(),
-                      className: `absolute top-0 right-0 h-full w-3 hover:bg-accent cursor-col-resize select-none touch-none ${
+                      className: `absolute top-0 right-0 h-full w-3 hover:bg-accent cursor-col-resize select-none touch-none z-10 ${
                         header.column.getIsResizing() ? 'isResizing' : ''
                       }`,
+                      style: {
+                        transform: header.column.getIsResizing()
+                            ? `translateX(${
+                                table.getState().columnSizingInfo.deltaOffset
+                              }px)`
+                            : '',
+                      },
                     }}
                   />
                 ) : null}
@@ -168,7 +171,7 @@ export function DataTable<TData, TValue>({
         })}
       </TableRow>
     ))
-  }, [table])
+  }
 
   return (
     <ErrorBoundary
@@ -224,7 +227,7 @@ export function DataTable<TData, TValue>({
         globalFilter !== deferredGlobalFilter ? 'opacity-50' : 'opacity-100'
       )}>
         <TableVirtuoso
-          totalCount={renderTotalCount}
+          totalCount={table.getRowModel().rows.length}
           components={{
             Table: Table,
             TableBody: TableBody,
@@ -232,7 +235,7 @@ export function DataTable<TData, TValue>({
             TableHead: TableHeader,
           }}
           fixedHeaderContent={fixedHeaderContent}
-          itemContent={TableItem}
+          itemContent={(index: number) => { const row = table.getRowModel().rows[index]; return <DataTableRow row={row} />}}
         />
       </div>
       <div className="flex items-center justify-between gap-2 p-4">
